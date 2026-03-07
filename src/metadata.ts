@@ -8,37 +8,34 @@ export interface ImageMetadata {
 
 export async function readImageMetadata(buffer: ArrayBuffer, filename?: string): Promise<ImageMetadata>{
     
-    const data = await exifr.parse(buffer, {xmp: true, iptc: true, exif: true});
+    const data = await exifr.parse(buffer, {xmp: true, iptc: true, exif: true})
 
-    const title =
-        data?.title ||
-        data?.ObjectName ||         //IPTC
-        data?.XPTitle ||            //Windows EXIF
-        undefined;
+    const title = data?.title.value             //XMP
+        || data?.ObjectName.value               //IPTC
+        || data?.XPTitle.value                  //Windows EXIF
+        || undefined
 
-    const description =
-        data?.description ||
-        data?.CaptionAbstract ||
-        data?.ImageDescription ||
-        undefined;
-    
-    const tags = 
-        data?.subject ||            //XMP
-        data?.Keywords ||           //IPTC
-        parseXPKeywords(data?.XPKeywords) ||
-        [];
+    const description = data?.description.value //XMP
+        || data?.CaptionAbstract.value          //IPTC
+        || data?.ImageDescription.value         //EXIF
+        || undefined
+        
+    const tags = data?.subject                  //XMP
+        || data?.Keywords                       //IPTC
+        || parseXPKeywords(data?.XPKeywords)    //Windows EXIF
+        || []
         
     return {
         title: title ?? filename,
         description,
         tags
-    };
+    }
 }
 
 function parseXPKeywords(value?: string | string[]){
-    if (!value) return undefined;
+    if (!value) return undefined
 
-    if (Array.isArray(value)) return value;
+    if (Array.isArray(value)) return value
 
-    return value.split(";").map(v => v.trim()).filter(Boolean);
+    return value.split(";").map(v => v.trim()).filter(Boolean)
 }

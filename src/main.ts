@@ -1,7 +1,7 @@
 import {App, Editor, MarkdownView, Modal, Notice, Plugin, FileView, TFile} from 'obsidian';
 import {DEFAULT_SETTINGS, XmpEditorPluginSettings, XmpEditorPluginSettingTab} from "./settings";
 import {jpgReadXmp} from "../lib/xmp-api.js";
-import { ImageMetadata, readImageMetadata } from "./metadata";
+import { readImageMetadata } from "./metadata";
 
 export default class XmpEditorPlugin extends Plugin {
 	settings: XmpEditorPluginSettings;
@@ -113,7 +113,7 @@ export default class XmpEditorPlugin extends Plugin {
 
 		const test = await readImageMetadata(buffer, file.name);
 
-		const titleInput = this.addInputControl(viewContent, "Title", test.title ?? "");
+		const titleInput = this.addInputControl(viewContent, "Title", test.title?.valueOf() ?? "");
 
 		titleInput.addEventListener('change', () => {
 			let title = titleInput.value;
