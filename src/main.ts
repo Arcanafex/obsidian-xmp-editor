@@ -1,12 +1,15 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin} from 'obsidian';
-import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
+import {App, Editor, MarkdownView, Modal, Notice, Plugin, FileView, TFile} from 'obsidian';
+import {DEFAULT_SETTINGS, XmpEditorPluginSettings, XmpEditorPluginSettingTab} from "./settings";
+import {jpgReadXmp} from "../lib/xmp-api.js";
+import { ImageMetadata, readImageMetadata } from "./metadata";
 
-// Remember to rename these classes and interfaces!
+export default class XmpEditorPlugin extends Plugin {
+	settings: XmpEditorPluginSettings;
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
 
 	async onload() {
+		console.log("XMP Editor Plugin Loaded");
+
 		await this.loadSettings();
 
 		// This creates an icon in the left ribbon.
@@ -15,6 +18,10 @@ export default class MyPlugin extends Plugin {
 			new Notice('This is a notice!');
 		});
 
+		this.registerEvent(
+			this.app.workspace.on('file-open', this.onFileOpen.bind(this))
+		);
+/* 
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
 		const statusBarItemEl = this.addStatusBarItem();
 		statusBarItemEl.setText('Status bar text');
@@ -67,21 +74,73 @@ export default class MyPlugin extends Plugin {
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-
+ */
 	}
 
 	onunload() {
+		console.log("XMP Editor Plugin Unloaded!");
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<MyPluginSettings>);
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<XmpEditorPluginSettings>);
 	}
 
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
-}
 
+	private async onFileOpen() {
+		const file = this.app.workspace.getActiveFile();
+
+		if (!file) return;
+
+		if (file.extension == 'jpg') {
+			await this.addControls(file);
+		}
+	}
+
+	private async addControls(file: TFile) {
+		const view = this.app.workspace.getActiveViewOfType(FileView);
+		
+		if (!view) return;
+		
+		const viewContent = view.contentEl;
+		
+		if (!viewContent) return;
+		
+		const buffer = await this.app.vault.readBinary(file);
+		const xmpPacket = jpgReadXmp(buffer);
+
+		const test = await readImageMetadata(buffer, file.name);
+
+		const titleInput = this.addInputControl(viewContent, "Title", test.title ?? "");
+
+		titleInput.addEventListener('change', () => {
+			let title = titleInput.value;
+
+			console.log(title);
+		});
+	}
+
+    private addInputControl(viewContent: Element, inputTitle: string, inputText: string){
+		const book = viewContent.createEl('div', { cls: 'book' });
+		book.createEl('div', { text: 'How to Take Smart Notes', cls: 'book__title' });
+		book.createEl('small', { text: 'Sönke Ahrens', cls: 'book__author' });
+		
+		const div = book.createDiv({
+            cls: 'xmp-metadata__tag-name',
+            text: inputTitle
+        });
+
+		const inputControl = book.createEl('textarea', {
+            cls: 'xmp-metadata__tag-value',
+            text: inputText
+        });
+
+        return inputControl;
+    }	
+}
+/* 
 class SampleModal extends Modal {
 	constructor(app: App) {
 		super(app);
@@ -97,3 +156,4 @@ class SampleModal extends Modal {
 		contentEl.empty();
 	}
 }
+ */
