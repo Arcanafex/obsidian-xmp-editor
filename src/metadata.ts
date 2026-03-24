@@ -1,7 +1,7 @@
 import exifr from "exifr"
 import { JpgImage } from "jpgImage"
 import { TFile } from "obsidian"
-//import {create} from "xmlbuilder2"
+import { getAltTextNode, parseXmp } from "xmp-tools"
 
 export interface FileFormat
 {
@@ -62,55 +62,15 @@ function parseXPKeywords(value?: string | string[]){
 }
 
 function updateDcTitle(xmpXml: string, newTitle: string): string {
-    const doc = create(xmpXml)
+    const doc = parseXmp(xmpXml)
 
-    const description = doc.find(
-        n => n.node.nodeName === "dc:title"
-        //&& n.some(child => child.node.nodeName == "dc:title")
-        , false, true)?.first()
+    const descriptions = Array.from(doc.getElementsByTagName("rdf:Description"))
+    let el: Element = descriptions.find(d => d.getAttribute("xmlns:dc")) ?? new Element()
 
-    // description.forEach(element => {
-    //     element.each(child => console.log(child.node.nodeName))
-    // });
-
+    const description = getAltTextNode(el, "dc:title", "x-default")
     if (!description) return "Garbage"
 
-    const value = description.first().node.textContent
+    const value = description
 
     return value ?? "empty????"
-
-//   if (!description) {
-//     throw new Error("rdf:Description not found in XMP")
-//   }
-
-//   // Find existing dc:title
-//   let title = description.find(node => node.node.nodeName === "dc:title")
-
-// if (!title) {
-//     // create dc:title structure
-//     title = description.ele("dc:title")
-//       .ele("rdf:Alt")
-//       .ele("rdf:li", { "xml:lang": "x-default" })
-//       .txt(newTitle)
-//   } else {
-
-//     let alt = title.find(node => node.node.nodeName === "rdf:Alt")
-
-//     if (!alt) {
-//         alt = title.ele("rdf:Alt")
-//     }
-
-//     let li = alt.find(node =>
-//       node.node.nodeName === "rdf:li"// &&
-//       //node.att("xml:lang") === "x-default"
-//     )
-
-//     if (!li) {
-//       li = alt.ele("rdf:li", { "xml:lang": "x-default" })
-//     }
-
-//     li.txt(newTitle)
-//   }
-
-//   return doc.end({ prettyPrint: true })
 }

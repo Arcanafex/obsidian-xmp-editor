@@ -1,5 +1,6 @@
 type XmpDom = Document
 const XMP_HEADER = Buffer.from("http://ns.adobe.com/xap/1.0/\0", "ascii") //Change this to be utf-8
+export const LANG_DEFAULT = "x-default"
 
 export function parseXmp(xmpXml: string): XmpDom {
     const parser = new DOMParser()
@@ -16,7 +17,7 @@ export function serializeXmp(dom: XmpDom): string {
     return serializer.serializeToString(dom)
 }
 
-function findOrCreateDescription(dom: XmpDom): Element {
+export function findOrCreateDescription(dom: XmpDom): Element {
     const descriptions = Array.from(
         dom.getElementsByTagName("rdf:Description")
     )
@@ -42,6 +43,20 @@ function findOrCreateDescription(dom: XmpDom): Element {
     }
 
     return description
+}
+
+export function getAltTextNode(desc: Element, tag: string, lang: string): string {
+    let el = desc.getElementsByTagName(tag)[0]
+    if (!el) return ""
+
+    let alt = el.getElementsByTagName("rdf:Alt")[0]
+    if (!alt) return ""
+
+    let li = Array.from(alt.getElementsByTagName("rdf:li"))
+        .find(n => n.getAttribute("xml:lang") === lang)
+    if (!li) return ""
+
+    return li.textContent
 }
 
 function setAltTextNode(
@@ -141,11 +156,11 @@ export function updateXmp(
     const desc = findOrCreateDescription(dom)
 
     if (updates.title) {
-        setAltTextNode(dom, desc, "dc:title", updates.title, "x-default")
+        setAltTextNode(dom, desc, "dc:title", updates.title, LANG_DEFAULT)
     }
 
     if (updates.description) {
-        setAltTextNode(dom, desc, "dc:description", updates.description, "x-default")
+        setAltTextNode(dom, desc, "dc:description", updates.description, LANG_DEFAULT)
     }
 
     if (updates.subjects) {

@@ -1,10 +1,9 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin, FileView, TFile, getAllTags, CachedMetadata, TagCache} from 'obsidian';
-import {DEFAULT_SETTINGS, XmpEditorPluginSettings, XmpEditorPluginSettingTab} from "./settings";
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, FileView, TFile, getAllTags, CachedMetadata, TagCache } from 'obsidian';
+import { DEFAULT_SETTINGS, XmpEditorPluginSettings, XmpEditorPluginSettingTab } from "./settings";
 import { getImageMetadata, readImageMetadata } from "./metadata";
 
 export default class XmpEditorPlugin extends Plugin {
 	settings: XmpEditorPluginSettings;
-
 
 	async onload() {
 		console.log("XMP Editor Plugin Loaded")
@@ -18,8 +17,8 @@ export default class XmpEditorPlugin extends Plugin {
 			new Notice('This is a notice!')
 		})
 
-		const tags = this.app.metadataCache.getTags();
-		console.log(tags);
+		// const tags = this.app.metadataCache.getTags();
+		// console.log(tags);
 
 		this.registerEvent(
 			this.app.workspace.on('file-open', this.onFileOpen.bind(this))
@@ -130,8 +129,6 @@ export default class XmpEditorPlugin extends Plugin {
 			console.log("tag: " + t.tag)
 			tags.push(t.tag)
 		})
-
-
 
 		const tagsInput = this.addTextControl(viewContent, "Tags", tags.join());
 		const titleInput = this.addTextControl(viewContent, "Title", image.title ?? "NONE");
