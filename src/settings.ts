@@ -32,5 +32,19 @@ export class XmpEditorPluginSettingTab extends PluginSettingTab {
 					this.plugin.settings.mySetting = value;
 					await this.plugin.saveSettings();
 				}));
+
+		new Setting(containerEl)  
+		.setName("Tags")  
+		.setDesc("Select tags")  
+		.addText(text => {
+	
+			text.inputEl.placeholder = "#tag";  
+	
+			//new TagSuggest(this.app, text.inputEl);  
+	
+			text.onChange(value => {  
+			console.log("tags:", value);  
+			});  
+		});  
 	}
 }

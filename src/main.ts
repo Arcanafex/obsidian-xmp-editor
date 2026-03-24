@@ -1,26 +1,29 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin, FileView, TFile} from 'obsidian';
+import {App, Editor, MarkdownView, Modal, Notice, Plugin, FileView, TFile, getAllTags, CachedMetadata, TagCache} from 'obsidian';
 import {DEFAULT_SETTINGS, XmpEditorPluginSettings, XmpEditorPluginSettingTab} from "./settings";
-import {jpgReadXmp} from "../lib/xmp-api.js";
-import { readImageMetadata } from "./metadata";
+import { getImageMetadata, readImageMetadata } from "./metadata";
 
 export default class XmpEditorPlugin extends Plugin {
 	settings: XmpEditorPluginSettings;
 
 
 	async onload() {
-		console.log("XMP Editor Plugin Loaded");
+		console.log("XMP Editor Plugin Loaded")
 
-		await this.loadSettings();
+		await this.loadSettings()
+		this.addSettingTab(new XmpEditorPluginSettingTab(this.app, this))
 
 		// This creates an icon in the left ribbon.
 		this.addRibbonIcon('dice', 'Sample', (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
+			new Notice('This is a notice!')
+		})
+
+		const tags = this.app.metadataCache.getTags();
+		console.log(tags);
 
 		this.registerEvent(
 			this.app.workspace.on('file-open', this.onFileOpen.bind(this))
-		);
+		)
 /* 
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
 		const statusBarItemEl = this.addStatusBarItem();
@@ -94,6 +97,15 @@ export default class XmpEditorPlugin extends Plugin {
 
 		if (!file) return;
 
+		const tagCache = this.app.metadataCache.getFileCache(file)
+		const tagsCacheArray = tagCache?.tags
+		const tags = ["Fnord"]
+		
+		tagsCacheArray?.forEach(t =>{
+			console.log("tag: " + t.tag)
+			tags.push(t.tag)
+		})
+
 		if (file.extension == 'jpg') {
 			await this.addControls(file);
 		}
@@ -101,38 +113,61 @@ export default class XmpEditorPlugin extends Plugin {
 
 	private async addControls(file: TFile) {
 		const view = this.app.workspace.getActiveViewOfType(FileView);
+		const viewContent = view?.contentEl;
 		
-		if (!view) return;
+		if (!viewContent) {
+			console.log("Unable to open view content for: " + file.path)
+			return;
+		}
 		
-		const viewContent = view.contentEl;
+		const image = await getImageMetadata(file)
+		//const tags = getAllTags(this.app.metadataCache.getFileCache(file));
+		const tagCache = this.app.metadataCache.getFileCache(file)
+		const tagsCacheArray = tagCache?.tags
+		const tags = ["Fnord"]
 		
-		if (!viewContent) return;
-		
-		const buffer = await this.app.vault.readBinary(file);
-		const xmpPacket = jpgReadXmp(buffer);
+		tagsCacheArray?.forEach(t =>{
+			console.log("tag: " + t.tag)
+			tags.push(t.tag)
+		})
 
-		const test = await readImageMetadata(buffer, file.name);
 
-		const titleInput = this.addInputControl(viewContent, "Title", test.title?.valueOf() ?? "");
 
-		titleInput.addEventListener('change', () => {
+		const tagsInput = this.addTextControl(viewContent, "Tags", tags.join());
+		const titleInput = this.addTextControl(viewContent, "Title", image.title ?? "NONE");
+		const descriptionInput = this.addTextAreaControl(viewContent, "Description", image.description ?? "NONE");
+
+/* 		titleInput.addEventListener('change', () => {
 			let title = titleInput.value;
 
 			console.log(title);
-		});
+		}); */
 	}
 
-    private addInputControl(viewContent: Element, inputTitle: string, inputText: string){
-		const book = viewContent.createEl('div', { cls: 'book' });
-		book.createEl('div', { text: 'How to Take Smart Notes', cls: 'book__title' });
-		book.createEl('small', { text: 'Sönke Ahrens', cls: 'book__author' });
+    private addTextControl(viewContent: Element, inputTitle: string, inputText: string){
+		// const book = viewContent.createEl('div', { cls: 'book' });
+		// book.createEl('div', { text: 'How to Take Smart Notes', cls: 'book__title' });
+		// book.createEl('small', { text: 'Sönke Ahrens', cls: 'book__author' });
 		
-		const div = book.createDiv({
+		//const div = viewContent.createDiv({ cls: 'book' })
+
+		const div = viewContent.createDiv({ cls: 'xmp-metadata__tag-name', text: inputTitle });
+		const inputControl = div.createEl('input', {
+			cls: 'xmp-metadata__tag-value',
+			type: `text`,
+			value: inputText
+		});
+
+        return inputControl;
+    }	
+
+    private addTextAreaControl(viewContent: Element, inputTitle: string, inputText: string){
+		const div = viewContent.createDiv({
             cls: 'xmp-metadata__tag-name',
             text: inputTitle
         });
 
-		const inputControl = book.createEl('textarea', {
+		const inputControl = div.createEl('textarea', {
             cls: 'xmp-metadata__tag-value',
             text: inputText
         });
